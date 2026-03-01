@@ -114,8 +114,7 @@ class TaskControllerTest {
     ResponseEntity<String> response = restTemplate.getForEntity("/api/tasks/abc", String.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-
-    verify(taskService, never()).findById(anyInt());
+    assertThat(response.getBody()).contains("Invalid parameter");
   }
 
   @Test
