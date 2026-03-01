@@ -72,11 +72,10 @@ public class TaskService {
    * @throws IllegalArgumentException если заголовок задачи равен null
    */
   public Task save(Task task) {
-    if (task.getTitle() == null) {
+    if (task.getTitle() == null || task.getTitle().trim().isEmpty()) {
       throw new IllegalArgumentException("Task title cannot be empty");
-    } else {
-      return taskRepository.save(task);
     }
+    return taskRepository.save(task);
   }
 
   /**
