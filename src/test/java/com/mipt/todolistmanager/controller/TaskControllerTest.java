@@ -1,296 +1,200 @@
 package com.mipt.todolistmanager.controller;
 
-import com.mipt.todolistmanager.model.Task;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mipt.todolistmanager.dto.TaskCreateDto;
+import com.mipt.todolistmanager.dto.TaskResponseDto;
+import com.mipt.todolistmanager.dto.TaskUpdateDto;
+import com.mipt.todolistmanager.model.Priority;
 import com.mipt.todolistmanager.service.TaskService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@WebMvcTest(TaskController.class)
 class TaskControllerTest {
 
   @Autowired
-  private TestRestTemplate restTemplate;
+  private MockMvc mockMvc;
 
-  @MockitoBean
+  @Autowired
+  private ObjectMapper objectMapper;
+
+  @MockBean
   private TaskService taskService;
 
-  private Task testTask1;
-  private Task testTask2;
-  private Task newTask;
+  private TaskCreateDto createDto;
+  private TaskUpdateDto updateDto;
+  private TaskResponseDto responseDto;
 
   @BeforeEach
   void setUp() {
-    testTask1 = new Task();
-    testTask1.setId(1);
-    testTask1.setTitle("Купить продукты");
-    testTask1.setDescription("Молоко, хлеб, яйца");
-    testTask1.setCompleted(false);
+    createDto = new TaskCreateDto();
+    createDto.setTitle("Test Task");
+    createDto.setDescription("Test Description");
+    createDto.setDueDate(LocalDate.now().plusDays(1));
+    createDto.setPriority(Priority.MEDIUM);
+    createDto.setTags(new HashSet<>(Arrays.asList("work", "important")));
 
-    testTask2 = new Task();
-    testTask2.setId(2);
-    testTask2.setTitle("Сделать домашку");
-    testTask2.setDescription("Spring Boot задание");
-    testTask2.setCompleted(false);
+    updateDto = new TaskUpdateDto();
+    updateDto.setTitle("Updated Task");
+    updateDto.setCompleted(true);
 
-    newTask = new Task();
-    newTask.setTitle("Новая задача");
-    newTask.setDescription("Описание новой задачи");
-    newTask.setCompleted(false);
-
-    reset(taskService);
+    responseDto = new TaskResponseDto();
+    responseDto.setId(1L);
+    responseDto.setTitle("Test Task");
+    responseDto.setDescription("Test Description");
+    responseDto.setCompleted(false);
+    responseDto.setCreatedAt(LocalDateTime.now());
+    responseDto.setDueDate(LocalDate.now().plusDays(1));
+    responseDto.setPriority(Priority.MEDIUM);
+    responseDto.setTags(new HashSet<>(Arrays.asList("work", "important")));
   }
 
   @Test
-  void getAllTasks_ShouldReturnListOfTasks() {
-    when(taskService.findAll()).thenReturn(List.of(testTask1, testTask2));
+  void getAllTasks_ShouldReturnListOfTasks() throws Exception {
+    List<TaskResponseDto> tasks = Arrays.asList(responseDto);
+    when(taskService.findAll()).thenReturn(tasks);
+    when(taskService.getTotalCount()).thenReturn(1);
 
-    ResponseEntity<Task[]> response = restTemplate.getForEntity("/api/tasks", Task[].class);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(response.getBody()).isNotNull();
-    assertThat(response.getBody()).hasSize(2);
-    assertThat(response.getBody()[0].getId()).isEqualTo(1);
-    assertThat(response.getBody()[1].getId()).isEqualTo(2);
-
-    verify(taskService, times(1)).findAll();
+    mockMvc.perform(get("/api/tasks"))
+        .andExpect(status().isOk())
+        .andExpect(header().string("X-Total-Count", "1"))
+        .andExpect(header().string("X-API-Version", "2.0.0"))
+        .andExpect(jsonPath("$[0].id").value(1))
+        .andExpect(jsonPath("$[0].title").value("Test Task"));
   }
 
   @Test
-  void getAllTasks_WhenNoTasks_ShouldReturnEmptyList() {
-    when(taskService.findAll()).thenReturn(List.of());
+  void getTaskById_WhenTaskExists_ShouldReturnTask() throws Exception {
+    when(taskService.getTaskById(1)).thenReturn(responseDto);
 
-    ResponseEntity<Task[]> response = restTemplate.getForEntity("/api/tasks", Task[].class);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(response.getBody()).isNotNull();
-    assertThat(response.getBody()).isEmpty();
-
-    verify(taskService, times(1)).findAll();
+    mockMvc.perform(get("/api/tasks/1"))
+        .andExpect(status().isOk())
+        .andExpect(header().string("X-API-Version", "2.0.0"))
+        .andExpect(jsonPath("$.id").value(1))
+        .andExpect(jsonPath("$.title").value("Test Task"));
   }
 
   @Test
-  void getTaskById_WithValidId_ShouldReturnTask() {
-    when(taskService.findById(1)).thenReturn(Optional.of(testTask1));
+  void getTaskById_WhenTaskNotFound_ShouldReturn404() throws Exception {
+    when(taskService.getTaskById(999)).thenThrow(new RuntimeException("Task not found"));
 
-    ResponseEntity<Task> response = restTemplate.getForEntity("/api/tasks/1", Task.class);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(response.getBody()).isNotNull();
-    assertThat(response.getBody().getId()).isEqualTo(1);
-
-    verify(taskService, times(1)).findById(1);
+    mockMvc.perform(get("/api/tasks/999"))
+        .andExpect(status().isNotFound());
   }
 
   @Test
-  void getTaskById_WithInvalidId_ShouldReturn404() {
-    when(taskService.findById(999)).thenReturn(Optional.empty());
+  void createTask_WithValidData_ShouldReturn201() throws Exception {
+    when(taskService.createTask(any(TaskCreateDto.class))).thenReturn(responseDto);
 
-    ResponseEntity<Task> response = restTemplate.getForEntity("/api/tasks/999", Task.class);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-    assertThat(response.getBody()).isNull();
-
-    verify(taskService, times(1)).findById(999);
+    mockMvc.perform(post("/api/tasks")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(createDto)))
+        .andExpect(status().isCreated())
+        .andExpect(header().string("X-API-Version", "2.0.0"))
+        .andExpect(jsonPath("$.id").value(1))
+        .andExpect(jsonPath("$.title").value("Test Task"));
   }
 
   @Test
-  void getTaskById_WithInvalidIdFormat_ShouldReturn400() {
-    ResponseEntity<String> response = restTemplate.getForEntity("/api/tasks/abc", String.class);
+  void createTask_WithEmptyTitle_ShouldReturn400() throws Exception {
+    createDto.setTitle("");
 
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-    assertThat(response.getBody()).contains("Invalid parameter");
+    mockMvc.perform(post("/api/tasks")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(createDto)))
+        .andExpect(status().isBadRequest());
   }
 
   @Test
-  void createTask_WithValidData_ShouldReturnCreatedTask() {
-    Task savedTask = new Task();
-    savedTask.setId(3);
-    savedTask.setTitle(newTask.getTitle());
-    savedTask.setDescription(newTask.getDescription());
-    savedTask.setCompleted(false);
+  void createTask_WithTitleTooShort_ShouldReturn400() throws Exception {
+    createDto.setTitle("ab");
 
-    when(taskService.save(any(Task.class))).thenReturn(savedTask);
-
-    ResponseEntity<Task> response = restTemplate.postForEntity("/api/tasks", newTask, Task.class);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-    assertThat(response.getBody()).isNotNull();
-    assertThat(response.getBody().getId()).isEqualTo(3);
-
-    verify(taskService, times(1)).save(any(Task.class));
+    mockMvc.perform(post("/api/tasks")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(createDto)))
+        .andExpect(status().isBadRequest());
   }
 
   @Test
-  void createTask_WithEmptyTitle_ShouldReturn400() {
-    Task invalidTask = new Task();
-    invalidTask.setTitle("");
-    invalidTask.setDescription("Описание");
-    invalidTask.setCompleted(false);
+  void createTask_WithNullPriority_ShouldReturn400() throws Exception {
+    createDto.setPriority(null);
 
-    when(taskService.save(any(Task.class)))
-        .thenThrow(new IllegalArgumentException("Task title cannot be empty"));
-
-    ResponseEntity<String> response = restTemplate.postForEntity("/api/tasks", invalidTask, String.class);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-
-    verify(taskService, times(1)).save(any(Task.class));
+    mockMvc.perform(post("/api/tasks")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(createDto)))
+        .andExpect(status().isBadRequest());
   }
 
   @Test
-  void createTask_WithNullTitle_ShouldReturn400() {
-    Task invalidTask = new Task();
-    invalidTask.setTitle(null);
-    invalidTask.setDescription("Описание");
-    invalidTask.setCompleted(false);
+  void createTask_WithDueDateInPast_ShouldReturn400() throws Exception {
+    createDto.setDueDate(LocalDate.now().minusDays(1));
 
-    when(taskService.save(any(Task.class)))
-        .thenThrow(new IllegalArgumentException("Task title cannot be empty"));
-
-    ResponseEntity<String> response = restTemplate.postForEntity("/api/tasks", invalidTask, String.class);
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-
-    verify(taskService, times(1)).save(any(Task.class));
+    mockMvc.perform(post("/api/tasks")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(createDto)))
+        .andExpect(status().isBadRequest());
   }
 
   @Test
-  void updateTask_WithValidIdAndData_ShouldReturnUpdatedTask() {
-    Task updatedTask = new Task();
-    updatedTask.setId(1);
-    updatedTask.setTitle("Обновленный заголовок");
-    updatedTask.setDescription("Обновленное описание");
-    updatedTask.setCompleted(true);
+  void createTask_WithTooManyTags_ShouldReturn400() throws Exception {
+    HashSet<String> tags = new HashSet<>();
+    for (int i = 0; i < 6; i++) {
+      tags.add("tag" + i);
+    }
+    createDto.setTags(tags);
 
-    when(taskService.existsById(1)).thenReturn(true);
-    when(taskService.save(any(Task.class))).thenReturn(updatedTask);
-
-    HttpEntity<Task> requestEntity = new HttpEntity<>(updatedTask);
-    ResponseEntity<Task> response = restTemplate.exchange(
-        "/api/tasks/1",
-        HttpMethod.PUT,
-        requestEntity,
-        Task.class
-    );
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(response.getBody()).isNotNull();
-    assertThat(response.getBody().getId()).isEqualTo(1);
-    assertThat(response.getBody().getTitle()).isEqualTo("Обновленный заголовок");
-
-    verify(taskService, times(1)).existsById(1);
-    verify(taskService, times(1)).save(any(Task.class));
+    mockMvc.perform(post("/api/tasks")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(createDto)))
+        .andExpect(status().isBadRequest());
   }
 
   @Test
-  void updateTask_WithInvalidId_ShouldReturn404() {
-    Task updatedTask = new Task();
-    updatedTask.setId(999);
-    updatedTask.setTitle("Обновленный заголовок");
-    updatedTask.setDescription("Описание");
-    updatedTask.setCompleted(true);
+  void updateTask_WithValidData_ShouldReturn200() throws Exception {
+    when(taskService.updateTask(eq(1), any(TaskUpdateDto.class))).thenReturn(responseDto);
 
-    when(taskService.existsById(999)).thenReturn(false);
-
-    HttpEntity<Task> requestEntity = new HttpEntity<>(updatedTask);
-    ResponseEntity<String> response = restTemplate.exchange(
-        "/api/tasks/999",
-        HttpMethod.PUT,
-        requestEntity,
-        String.class
-    );
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-
-    verify(taskService, times(1)).existsById(999);
-    verify(taskService, never()).save(any(Task.class));
+    mockMvc.perform(put("/api/tasks/1")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(updateDto)))
+        .andExpect(status().isOk())
+        .andExpect(header().string("X-API-Version", "2.0.0"));
   }
 
   @Test
-  void updateTask_WithInvalidIdFormat_ShouldReturn400() {
-    Task updatedTask = new Task();
-    updatedTask.setId(1);
-    updatedTask.setTitle("Заголовок");
-    updatedTask.setDescription("Описание");
-    updatedTask.setCompleted(true);
+  void updateTask_WhenTaskNotFound_ShouldReturn404() throws Exception {
+    when(taskService.updateTask(eq(999), any(TaskUpdateDto.class)))
+        .thenThrow(new RuntimeException("Task not found"));
 
-    HttpEntity<Task> requestEntity = new HttpEntity<>(updatedTask);
-    ResponseEntity<String> response = restTemplate.exchange(
-        "/api/tasks/abc",
-        HttpMethod.PUT,
-        requestEntity,
-        String.class
-    );
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-
-    verify(taskService, never()).existsById(anyInt());
-    verify(taskService, never()).save(any(Task.class));
+    mockMvc.perform(put("/api/tasks/999")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(updateDto)))
+        .andExpect(status().isNotFound());
   }
 
   @Test
-  void deleteTask_WithValidId_ShouldReturn204() {
-    when(taskService.existsById(1)).thenReturn(true);
+  void deleteTask_WhenTaskExists_ShouldReturn204() throws Exception {
     doNothing().when(taskService).deleteById(1);
 
-    ResponseEntity<Void> response = restTemplate.exchange(
-        "/api/tasks/1",
-        HttpMethod.DELETE,
-        null,
-        Void.class
-    );
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
-
-    verify(taskService, times(1)).existsById(1);
-    verify(taskService, times(1)).deleteById(1);
-  }
-
-  @Test
-  void deleteTask_WithInvalidId_ShouldReturn404() {
-    when(taskService.existsById(999)).thenReturn(false);
-
-    ResponseEntity<Void> response = restTemplate.exchange(
-        "/api/tasks/999",
-        HttpMethod.DELETE,
-        null,
-        Void.class
-    );
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-
-    verify(taskService, times(1)).existsById(999);
-    verify(taskService, never()).deleteById(anyInt());
-  }
-
-  @Test
-  void deleteTask_WithInvalidIdFormat_ShouldReturn400() {
-    ResponseEntity<String> response = restTemplate.exchange(
-        "/api/tasks/abc",
-        HttpMethod.DELETE,
-        null,
-        String.class
-    );
-
-    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-
-    verify(taskService, never()).existsById(anyInt());
-    verify(taskService, never()).deleteById(anyInt());
+    mockMvc.perform(delete("/api/tasks/1"))
+        .andExpect(status().isNoContent())
+        .andExpect(header().string("X-API-Version", "2.0.0"));
   }
 }
