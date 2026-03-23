@@ -5,24 +5,19 @@ import com.mipt.todolistmanager.dto.TaskResponseDto;
 import com.mipt.todolistmanager.dto.TaskUpdateDto;
 import com.mipt.todolistmanager.exception.TaskNotFoundException;
 import com.mipt.todolistmanager.mapper.TaskMapper;
-import com.mipt.todolistmanager.model.Priority;
 import com.mipt.todolistmanager.model.Task;
 import com.mipt.todolistmanager.repository.InMemoryTaskRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import org.springframework.stereotype.Service;
+
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.springframework.stereotype.Service;
 
-/**
- * Сервис для управления задачами. Содержит бизнес-логику приложения и делегирует операции
- * репозиторию. Демонстрирует жизненный цикл бина через аннотации {@link PostConstruct} и
- * {@link PreDestroy}.
- */
 @Service
 public class TaskService {
 
@@ -50,7 +45,7 @@ public class TaskService {
 
   public TaskResponseDto getTaskById(int id) {
     Task task = taskRepository.findById(id)
-        .orElseThrow(() -> new TaskNotFoundException(id));
+        .orElseThrow(() -> new TaskNotFoundException((long) id));
     return taskMapper.toResponseDto(task);
   }
 
@@ -71,7 +66,7 @@ public class TaskService {
 
   public TaskResponseDto updateTask(int id, TaskUpdateDto dto) {
     Task existing = taskRepository.findById(id)
-        .orElseThrow(() -> new TaskNotFoundException(id));
+        .orElseThrow(() -> new TaskNotFoundException((long) id));
     taskMapper.updateEntity(dto, existing);
     if (dto.getDueDate() != null && dto.getDueDate().isBefore(existing.getCreatedAt().toLocalDate())) {
       throw new IllegalArgumentException("Due date cannot be before creation date");
@@ -82,7 +77,7 @@ public class TaskService {
 
   public void deleteById(int id) {
     if (!taskRepository.existsById(id)) {
-      throw new TaskNotFoundException(id);
+      throw new TaskNotFoundException((long) id);
     }
     taskRepository.deleteById(id);
   }

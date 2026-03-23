@@ -45,7 +45,7 @@ class FavoritesControllerTest {
 
   @Test
   void addToFavorites_ShouldReturn200() throws Exception {
-    doNothing().when(favoritesService).addToFavorites(eq(1L), any());
+    doNothing().when(favoritesService).addToFavorites((int) eq(1L), any());
 
     mockMvc.perform(post("/api/favorites/1")
             .session(session))
@@ -55,7 +55,7 @@ class FavoritesControllerTest {
 
   @Test
   void addToFavorites_WhenTaskNotFound_ShouldReturn404() throws Exception {
-    doNothing().when(favoritesService).addToFavorites(eq(999L), any());
+    doNothing().when(favoritesService).addToFavorites((int) eq(999L), any());
 
     mockMvc.perform(post("/api/favorites/999")
             .session(session))
@@ -64,7 +64,7 @@ class FavoritesControllerTest {
 
   @Test
   void removeFromFavorites_ShouldReturn204() throws Exception {
-    doNothing().when(favoritesService).removeFromFavorites(eq(1L), any());
+    doNothing().when(favoritesService).removeFromFavorites((int) eq(1L), any());
 
     mockMvc.perform(delete("/api/favorites/1")
             .session(session))

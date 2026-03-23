@@ -9,12 +9,6 @@ import java.util.Optional;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Repository;
 
-/**
- * Реализация репозитория задач в оперативной памяти. Хранит задачи в HashMap и генерирует ID
- * автоматически. Является основным (primary) репозиторием.
- *
- * @see TaskRepository
- */
 @Repository
 @Primary
 public class InMemoryTaskRepository implements TaskRepository {
@@ -49,9 +43,5 @@ public class InMemoryTaskRepository implements TaskRepository {
   @Override
   public boolean existsById(int id) {
     return tasks.containsKey(id);
-  }
-
-  public Map<Integer, Task> findAllAsMap() {
-    return new HashMap<>(tasks);
   }
 }

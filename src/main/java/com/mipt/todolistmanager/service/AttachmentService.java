@@ -32,7 +32,7 @@ public class AttachmentService {
   }
 
   public AttachmentResponseDto storeAttachment(Long taskId, MultipartFile file) throws IOException {
-    if (!taskRepository.existsById(taskId)) {
+    if (!taskRepository.existsById(Math.toIntExact(taskId))) {
       throw new TaskNotFoundException(taskId);
     }
     if (!Files.exists(rootLocation)) {
@@ -80,7 +80,7 @@ public class AttachmentService {
   }
 
   public List<AttachmentResponseDto> getAttachmentsByTaskId(Long taskId) {
-    if (!taskRepository.existsById(taskId)) {
+    if (!taskRepository.existsById(Math.toIntExact(taskId))) {
       throw new TaskNotFoundException(taskId);
     }
     return attachmentRepository.findByTaskId(taskId).values().stream()

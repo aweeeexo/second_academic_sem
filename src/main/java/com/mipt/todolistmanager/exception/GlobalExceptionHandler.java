@@ -20,6 +20,12 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+  @ExceptionHandler(TaskNotFoundException.class)
+  public ResponseEntity<ErrorResponse> handleTaskNotFound(TaskNotFoundException ex, HttpServletRequest request) {
+    ErrorResponse errorResponse = buildErrorResponse(HttpStatus.NOT_FOUND, "Task not found", ex.getMessage(), request, null);
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+  }
+
   @ExceptionHandler(MethodArgumentNotValidException.class)
   public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex, HttpServletRequest request) {
     Map<String, Object> details = new HashMap<>();
@@ -60,16 +66,23 @@ public class GlobalExceptionHandler {
     return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
   }
 
-  @ExceptionHandler(TaskNotFoundException.class)
-  public ResponseEntity<ErrorResponse> handleTaskNotFound(TaskNotFoundException ex, HttpServletRequest request) {
-    ErrorResponse errorResponse = buildErrorResponse(HttpStatus.NOT_FOUND, "Task not found", ex.getMessage(), request, null);
-    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
-  }
-
   @ExceptionHandler(IllegalArgumentException.class)
   public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest request) {
     ErrorResponse errorResponse = buildErrorResponse(HttpStatus.BAD_REQUEST, "Bad request", ex.getMessage(), request, null);
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+  }
+
+  @ExceptionHandler(RuntimeException.class)
+  public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex, HttpServletRequest request) {
+    String message = ex.getMessage();
+    HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+
+    if (message != null && (message.contains("not found") || message.contains("Attachment not found"))) {
+      status = HttpStatus.NOT_FOUND;
+    }
+
+    ErrorResponse errorResponse = buildErrorResponse(status, status.getReasonPhrase(), message, request, null);
+    return ResponseEntity.status(status).body(errorResponse);
   }
 
   @ExceptionHandler(Exception.class)

@@ -14,6 +14,7 @@ import java.util.List;
 @RequestMapping("/api/favorites")
 public class FavoritesController {
   private final FavoritesService favoritesService;
+
   @Value("${api.version}")
   private String apiVersion;
 
@@ -23,7 +24,7 @@ public class FavoritesController {
 
   @Operation(summary = "Add task to favorites")
   @PostMapping("/{taskId}")
-  public ResponseEntity<Void> addToFavorites(@PathVariable Long taskId, HttpSession session) {
+  public ResponseEntity<Void> addToFavorites(@PathVariable int taskId, HttpSession session) {
     favoritesService.addToFavorites(taskId, session);
     return ResponseEntity.ok()
         .header("X-API-Version", apiVersion)
@@ -32,7 +33,7 @@ public class FavoritesController {
 
   @Operation(summary = "Remove task from favorites")
   @DeleteMapping("/{taskId}")
-  public ResponseEntity<Void> removeFromFavorites(@PathVariable Long taskId, HttpSession session) {
+  public ResponseEntity<Void> removeFromFavorites(@PathVariable int taskId, HttpSession session) {
     favoritesService.removeFromFavorites(taskId, session);
     return ResponseEntity.noContent()
         .header("X-API-Version", apiVersion)
