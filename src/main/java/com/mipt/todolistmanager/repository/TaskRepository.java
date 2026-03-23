@@ -33,7 +33,7 @@ public interface TaskRepository {
    *
    * @return список всех задач
    */
-  List<Task> findall();
+  List<Task> findAll();
 
   /**
    * Удаляет задачу по идентификатору.
@@ -48,5 +48,5 @@ public interface TaskRepository {
    * @param id идентификатор задачи
    * @return true если задача существует
    */
-  boolean existById(int id);
+  boolean existsById(int id);
 }
