@@ -47,7 +47,7 @@ public class TaskController {
   @Operation(summary = "Get task by ID")
   @GetMapping("/{id}")
   public ResponseEntity<TaskResponseDto> getById(@PathVariable int id) {
-    TaskResponseDto task = taskService.getTaskById(id);
+    TaskResponseDto task = taskService.getTaskById((long) id);
     return ResponseEntity.ok()
         .header("X-API-Version", apiVersion)
         .body(task);
@@ -66,7 +66,7 @@ public class TaskController {
   @PutMapping("/{id}")
   public ResponseEntity<TaskResponseDto> update(@PathVariable int id,
       @Validated(OnUpdate.class) @RequestBody TaskUpdateDto dto) {
-    TaskResponseDto updated = taskService.updateTask(id, dto);
+    TaskResponseDto updated = taskService.updateTask((long) id, dto);
     return ResponseEntity.ok()
         .header("X-API-Version", apiVersion)
         .body(updated);
@@ -75,7 +75,7 @@ public class TaskController {
   @Operation(summary = "Delete a task")
   @DeleteMapping("/{id}")
   public ResponseEntity<Void> delete(@PathVariable int id) {
-    taskService.deleteById(id);
+    taskService.deleteById((long) id);
     return ResponseEntity.noContent()
         .header("X-API-Version", apiVersion)
         .build();
