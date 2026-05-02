@@ -9,7 +9,7 @@ import java.util.List;
 public interface TaskJpaRepository extends JpaRepository<Task, Long> {
   List<Task> findByCompletedAndPriority(boolean completed, Priority priority);
 
-  @Query("SELECT t FROM Task t WHERE t.dueDate BETWEEN CURRENT_DATE AND CURRENT_DATE + 7")
+  @Query(value = "SELECT * FROM tasks WHERE due_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7' DAY", nativeQuery = true)
   List<Task> findDueInNext7Days();
 
   @Query("SELECT t FROM Task t LEFT JOIN FETCH t.attachments")
