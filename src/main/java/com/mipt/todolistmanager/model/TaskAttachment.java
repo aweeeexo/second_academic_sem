@@ -1,15 +1,27 @@
 package com.mipt.todolistmanager.model;
 
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
+@Entity
+@Table(name = "task_attachments")
 public class TaskAttachment {
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
+
+  @Column(name = "task_id")
   private Long taskId;
+
   private String fileName;
   private String storedFileName;
   private String contentType;
   private long size;
   private LocalDateTime uploadedAt;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "task_id", insertable = false, updatable = false)
+  private Task task;
 
   public TaskAttachment() {
   }
@@ -68,5 +80,13 @@ public class TaskAttachment {
 
   public void setUploadedAt(LocalDateTime uploadedAt) {
     this.uploadedAt = uploadedAt;
+  }
+
+  public Task getTask() {
+    return task;
+  }
+
+  public void setTask(Task task) {
+    this.task = task;
   }
 }

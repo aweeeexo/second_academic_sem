@@ -1,7 +1,13 @@
 package com.mipt.todolistmanager.model;
 
+import jakarta.persistence.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -9,16 +15,34 @@ import java.util.Set;
  * Модель данных для задачи. Содержит основные поля задачи и переопределенные методы equals,
  * hashCode и toString.
  */
+@Entity
+@Table(name = "tasks")
+@EntityListeners(AuditingEntityListener.class)
 public class Task {
 
-  private Long id; // изменено на Long для удобства
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
   private String title;
   private String description;
   private boolean completed;
+
+  @CreatedDate
   private LocalDateTime createdAt;
+
   private LocalDate dueDate;
+
+  @Enumerated(EnumType.STRING)
   private Priority priority;
+
+  @Convert(converter = StringSetConverter.class)
   private Set<String> tags;
+
+  @LastModifiedDate
+  private LocalDateTime lastModifiedDate;
+
+  @OneToMany(mappedBy = "task", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
+  private List<TaskAttachment> attachments = new ArrayList<>();
 
   /**
    * Конструктор по умолчанию.
@@ -148,6 +172,22 @@ public class Task {
 
   public void setTags(Set<String> tags) {
     this.tags = tags;
+  }
+
+  public LocalDateTime getLastModifiedDate() {
+    return lastModifiedDate;
+  }
+
+  public void setLastModifiedDate(LocalDateTime lastModifiedDate) {
+    this.lastModifiedDate = lastModifiedDate;
+  }
+
+  public List<TaskAttachment> getAttachments() {
+    return attachments;
+  }
+
+  public void setAttachments(List<TaskAttachment> attachments) {
+    this.attachments = attachments;
   }
 
   /**
