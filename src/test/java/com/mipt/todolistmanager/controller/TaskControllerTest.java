@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mipt.todolistmanager.dto.TaskCreateDto;
 import com.mipt.todolistmanager.dto.TaskResponseDto;
 import com.mipt.todolistmanager.dto.TaskUpdateDto;
+import com.mipt.todolistmanager.exception.TaskNotFoundException;
 import com.mipt.todolistmanager.model.Priority;
 import com.mipt.todolistmanager.service.TaskService;
 import org.junit.jupiter.api.BeforeEach;
@@ -187,7 +188,8 @@ class TaskControllerTest {
   void updateTask_WhenTaskNotFound_ShouldReturn404() throws Exception {
     when(taskService.updateTask((long) eq(999), any(TaskUpdateDto.class)))
         .thenThrow(new RuntimeException("Task not found"));
-
+    when(taskService.updateTask(eq(999L), any(TaskUpdateDto.class)))
+        .thenThrow(new TaskNotFoundException(999L));
     mockMvc.perform(put("/api/tasks/999")
             .contentType(MediaType.APPLICATION_JSON)
             .content(objectMapper.writeValueAsString(updateDto)))
