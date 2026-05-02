@@ -9,7 +9,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -20,7 +19,6 @@ class TaskServiceIntegrationTest {
 
   @Autowired
   private TaskService taskService;
-
   @Autowired
   private TaskJpaRepository taskRepository;
 
@@ -30,11 +28,8 @@ class TaskServiceIntegrationTest {
     task1.setTitle("Task 1");
     task1.setCompleted(false);
     taskRepository.save(task1);
-
     List<Long> ids = List.of(task1.getId(), 999L);
-
     assertThrows(TaskNotFoundException.class, () -> taskService.bulkCompleteTasks(ids));
-
     Task refreshed = taskRepository.findById(task1.getId()).orElseThrow();
     assertThat(refreshed.isCompleted()).isFalse();
   }
@@ -48,10 +43,8 @@ class TaskServiceIntegrationTest {
     task2.setTitle("Task 2");
     task2.setCompleted(false);
     taskRepository.saveAll(List.of(task1, task2));
-
     List<Long> ids = List.of(task1.getId(), task2.getId());
     taskService.bulkCompleteTasks(ids);
-
     assertThat(taskRepository.findById(task1.getId()).get().isCompleted()).isTrue();
     assertThat(taskRepository.findById(task2.getId()).get().isCompleted()).isTrue();
   }

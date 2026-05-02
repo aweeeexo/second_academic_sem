@@ -31,19 +31,7 @@ spring:
   flyway:
     enabled: true
 ---
-spring:
-  config:
-    activate:
-      on-profile: test
-  datasource:
-    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
-    username: sa
-    password:
-  jpa:
-    hibernate:
-      ddl-auto: validate
-  flyway:
-    enabled: true
+
 ---
 spring:
   config:
