@@ -83,7 +83,7 @@ class TaskControllerTest {
 
   @Test
   void getTaskById_WhenTaskExists_ShouldReturnTask() throws Exception {
-    when(taskService.getTaskById(1)).thenReturn(responseDto);
+    when(taskService.getTaskById(1L)).thenReturn(responseDto);
 
     mockMvc.perform(get("/api/tasks/1"))
         .andExpect(status().isOk())
@@ -94,7 +94,7 @@ class TaskControllerTest {
 
   @Test
   void getTaskById_WhenTaskNotFound_ShouldReturn404() throws Exception {
-    when(taskService.getTaskById(999)).thenThrow(new RuntimeException("Task not found"));
+    when(taskService.getTaskById(999L)).thenThrow(new RuntimeException("Task not found"));
 
     mockMvc.perform(get("/api/tasks/999"))
         .andExpect(status().isNotFound());
@@ -169,7 +169,7 @@ class TaskControllerTest {
 
   @Test
   void updateTask_WithValidData_ShouldReturn200() throws Exception {
-    when(taskService.updateTask(eq(1), any(TaskUpdateDto.class))).thenReturn(responseDto);
+    when(taskService.updateTask((long) eq(1), any(TaskUpdateDto.class))).thenReturn(responseDto);
 
     mockMvc.perform(put("/api/tasks/1")
             .contentType(MediaType.APPLICATION_JSON)
@@ -180,7 +180,7 @@ class TaskControllerTest {
 
   @Test
   void updateTask_WhenTaskNotFound_ShouldReturn404() throws Exception {
-    when(taskService.updateTask(eq(999), any(TaskUpdateDto.class)))
+    when(taskService.updateTask((long) eq(999), any(TaskUpdateDto.class)))
         .thenThrow(new RuntimeException("Task not found"));
 
     mockMvc.perform(put("/api/tasks/999")
@@ -191,7 +191,7 @@ class TaskControllerTest {
 
   @Test
   void deleteTask_WhenTaskExists_ShouldReturn204() throws Exception {
-    doNothing().when(taskService).deleteById(1);
+    doNothing().when(taskService).deleteById(1L);
 
     mockMvc.perform(delete("/api/tasks/1"))
         .andExpect(status().isNoContent())
